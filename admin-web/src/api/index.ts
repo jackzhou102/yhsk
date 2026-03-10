@@ -37,7 +37,6 @@ export const api = {
     generate: (data: any) => request<any>({ url: '/license/generate', method: 'POST', data }),
     revoke: (id: string) => request<any>({ url: `/license/revoke/${id}`, method: 'POST' }),
     delete: (id: string) => request<any>({ url: `/license/${id}`, method: 'DELETE' }),
-    offline: (data: any) => request<any>({ url: '/license/offline', method: 'POST', data }),
     unbind: (licenseId: string, machineCode: string) => request<any>({ url: '/auth/unbind', method: 'POST', data: { licenseId, machineCode } })
   },
 

@@ -5,29 +5,36 @@
         <template #header>
           <div class="card-header">
             <el-icon :size="24"><Connection /></el-icon>
-            <span>在线授权验证</span>
+            <span>授权验证</span>
           </div>
         </template>
 
         <el-form :model="form" label-width="100px" :rules="rules" ref="formRef">
-          <el-form-item label="机器码">
-            <el-input v-model="licenseStore.machineCode" disabled>
+          <el-form-item label="机器码" prop="machineCode">
+            <el-input
+              v-model="form.machineCode"
+              placeholder="请输入机器码或使用本机机器码"
+              style="font-family: monospace;"
+            >
               <template #append>
-                <el-button @click="copyMachineCode">复制</el-button>
+                <el-button @click="useLocalMachineCode" :disabled="!licenseStore.machineCode">
+                  使用本机
+                </el-button>
               </template>
             </el-input>
+            <div class="form-tip">可输入其他机器的机器码，为其生成授权文件</div>
           </el-form-item>
-          
+
           <el-form-item label="授权码" prop="licenseKey">
-            <el-input 
-              v-model="form.licenseKey" 
+            <el-input
+              v-model="form.licenseKey"
               placeholder="请输入授权码 (XXXX-XXXX-XXXX-XXXX)"
               style="font-family: monospace;"
             />
           </el-form-item>
 
-          <el-form-item label="设备名称">
-            <el-input v-model="form.deviceName" placeholder="可选，用于标识设备" />
+          <el-form-item label="设备名称" prop="deviceName">
+            <el-input v-model="form.deviceName" placeholder="请输入设备名称，用于标识设备" />
           </el-form-item>
         </el-form>
 
@@ -48,7 +55,7 @@
             show-icon
             :closable="false"
           />
-          
+
           <div v-if="verifyResult.valid && verifyResult.license" class="success-info">
             <el-descriptions :column="2" border size="small">
               <el-descriptions-item label="产品名称">
@@ -57,13 +64,27 @@
               <el-descriptions-item label="授权类型">
                 {{ getTypeName(verifyResult.license.licenseType) }}
               </el-descriptions-item>
+              <el-descriptions-item label="设备使用">
+                <el-tag type="primary">{{ verifyResult.activeDeviceCount }} / {{ verifyResult.maxDevices }} 台</el-tag>
+                <span style="margin-left: 8px; color: #909399; font-size: 12px;">
+                  (剩余 {{ verifyResult.remainingDevices }} 台)
+                </span>
+              </el-descriptions-item>
               <el-descriptions-item label="剩余天数">
                 <el-tag type="success">{{ verifyResult.remainingDays }} 天</el-tag>
               </el-descriptions-item>
-              <el-descriptions-item label="过期时间">
+              <el-descriptions-item label="过期时间" :span="2">
                 {{ formatDate(verifyResult.license.expireAt) }}
               </el-descriptions-item>
             </el-descriptions>
+
+            <div class="download-section">
+              <el-button type="primary" size="large" @click="downloadLicenseFile" :loading="downloading">
+                <el-icon><Download /></el-icon>
+                下载授权文件 (.lic)
+              </el-button>
+              <p class="download-tip">请将授权文件复制到目标软件的授权目录中使用</p>
+            </div>
           </div>
         </div>
       </el-card>
@@ -77,10 +98,11 @@
           </div>
         </template>
         <ol class="help-list">
-          <li>复制本机机器码，发送给管理员获取授权码</li>
+          <li>获取目标机器的机器码（可使用本机机器码或其他机器码）</li>
           <li>输入管理员提供的授权码</li>
-          <li>点击"验证授权"完成在线授权</li>
-          <li>授权成功后即可使用软件全部功能</li>
+          <li>点击"验证授权"完成授权验证</li>
+          <li>验证成功后下载授权文件 (.lic)</li>
+          <li>将授权文件复制到目标软件的授权目录中</li>
         </ol>
       </el-card>
     </div>
@@ -100,17 +122,25 @@ const licenseStore = useLicenseStore()
 
 const formRef = ref<FormInstance>()
 const verifying = ref(false)
+const downloading = ref(false)
 const verifyResult = ref<any>(null)
 
 const form = reactive({
+  machineCode: '',
   licenseKey: '',
   deviceName: ''
 })
 
 const rules: FormRules = {
+  machineCode: [
+    { required: true, message: '请输入机器码', trigger: 'blur' }
+  ],
   licenseKey: [
     { required: true, message: '请输入授权码', trigger: 'blur' },
     { pattern: /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/, message: '授权码格式不正确', trigger: 'blur' }
+  ],
+  deviceName: [
+    { required: true, message: '请输入设备名称', trigger: 'blur' }
   ]
 }
 
@@ -127,10 +157,9 @@ const formatDate = (date: string) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
 }
 
-const copyMachineCode = () => {
+const useLocalMachineCode = () => {
   if (licenseStore.machineCode) {
-    navigator.clipboard.writeText(licenseStore.machineCode)
-    ElMessage.success('已复制到剪贴板')
+    form.machineCode = licenseStore.machineCode
   }
 }
 
@@ -140,41 +169,32 @@ const handleVerify = async () => {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
 
-    if (!licenseStore.machineCode) {
-      ElMessage.error('无法获取机器码')
-      return
-    }
-
     verifying.value = true
     try {
       const res = await authApi.verify({
         licenseKey: form.licenseKey,
-        machineCode: licenseStore.machineCode,
-        deviceName: form.deviceName || 'Unknown'
+        machineCode: form.machineCode,
+        deviceName: form.deviceName
       })
 
-      // 后端返回格式: { success: true, data: { valid, license, message, remainingDays } }
       const result = res.data
       verifyResult.value = result.data || { valid: false, message: result.message || '验证失败' }
 
       if (result.success && result.data?.valid && result.data.license) {
-        // 保存授权信息
-        licenseStore.setLicenseInfo({
-          licenseKey: result.data.license.licenseKey,
-          productName: result.data.license.productName,
-          licenseType: result.data.license.licenseType,
-          features: result.data.license.features,
-          expireAt: result.data.license.expireAt,
-          status: 'valid',
-          remainingDays: result.data.remainingDays || 0
-        })
+        // 如果使用的是本机机器码，保存授权信息
+        if (form.machineCode === licenseStore.machineCode) {
+          licenseStore.setLicenseInfo({
+            licenseKey: result.data.license.licenseKey,
+            productName: result.data.license.productName,
+            licenseType: result.data.license.licenseType,
+            features: result.data.license.features,
+            expireAt: result.data.license.expireAt,
+            status: 'valid',
+            remainingDays: result.data.remainingDays || 0
+          })
+        }
 
-        ElMessage.success('授权验证成功！')
-
-        // 2秒后返回首页
-        setTimeout(() => {
-          router.push('/')
-        }, 2000)
+        ElMessage.success('授权验证成功！请下载授权文件')
       }
     } catch (error) {
       verifyResult.value = {
@@ -187,13 +207,50 @@ const handleVerify = async () => {
   })
 }
 
+const downloadLicenseFile = async () => {
+  if (!form.licenseKey || !form.machineCode) {
+    ElMessage.error('缺少必要参数')
+    return
+  }
+
+  downloading.value = true
+  try {
+    const res = await authApi.generateLicenseFile({
+      licenseKey: form.licenseKey,
+      machineCode: form.machineCode
+    })
+
+    if (res.data.success && res.data.data) {
+      const content = res.data.data
+      const blob = new Blob([content], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `license_${form.licenseKey.replace(/-/g, '')}.lic`
+      a.click()
+      URL.revokeObjectURL(url)
+      ElMessage.success('授权文件已下载')
+    } else {
+      ElMessage.error(res.data.message || '生成授权文件失败')
+    }
+  } catch (error) {
+    ElMessage.error('生成授权文件失败')
+  } finally {
+    downloading.value = false
+  }
+}
+
 onMounted(async () => {
-  // 确保机器码已获取
+  // 获取本机机器码
   if (!licenseStore.machineCode && window.electronAPI) {
     const result = await window.electronAPI.getMachineId()
     if (result.success && result.data) {
       licenseStore.setMachineCode(result.data)
     }
+  }
+  // 默认使用本机机器码
+  if (licenseStore.machineCode) {
+    form.machineCode = licenseStore.machineCode
   }
 })
 </script>
@@ -231,12 +288,32 @@ onMounted(async () => {
   margin-top: 20px;
 }
 
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+
 .verify-result {
   margin-top: 20px;
 }
 
 .success-info {
   margin-top: 16px;
+}
+
+.download-section {
+  margin-top: 24px;
+  text-align: center;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.download-tip {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 13px;
 }
 
 .help-card {

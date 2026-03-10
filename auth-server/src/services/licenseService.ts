@@ -153,13 +153,17 @@ export class LicenseService {
         this.logAuth(license.id, data.machineCode, 'verify', ipAddress, 'success', '验证成功');
         
         const remainingDays = Math.ceil((expireDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        const activeDeviceCount = bindings.filter(b => b.status === DeviceStatus.ACTIVE).length;
         return {
           success: true,
           data: {
             valid: true,
             license,
             message: '验证成功',
-            remainingDays
+            remainingDays,
+            activeDeviceCount,
+            maxDevices: license.maxDevices,
+            remainingDevices: license.maxDevices - activeDeviceCount
           }
         };
       }
@@ -176,7 +180,7 @@ export class LicenseService {
       }
 
       // 绑定新设备
-      this.bindDevice(license.id, data.machineCode, data.deviceName || 'Unknown');
+      this.bindDevice(license.id, data.machineCode, data.deviceName && data.deviceName.trim() ? data.deviceName.trim() : 'Unknown');
       
       // 更新授权状态为激活
       if (license.status === LicenseStatus.UNUSED) {
@@ -186,13 +190,17 @@ export class LicenseService {
       this.logAuth(license.id, data.machineCode, 'bind', ipAddress, 'success', '设备绑定成功');
       
       const remainingDays = Math.ceil((expireDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      const newActiveDeviceCount = activeDevices.length + 1;
       return {
         success: true,
         data: {
           valid: true,
           license,
           message: '设备绑定成功',
-          remainingDays
+          remainingDays,
+          activeDeviceCount: newActiveDeviceCount,
+          maxDevices: license.maxDevices,
+          remainingDevices: license.maxDevices - newActiveDeviceCount
         }
       };
     } catch (error: any) {
@@ -246,6 +254,55 @@ export class LicenseService {
     // 编码为 Base64
     const encoded = base64Encode(JSON.stringify(licenseFile));
     
+    return { success: true, data: encoded };
+  }
+
+  /**
+   * 在线授权生成授权文件
+   */
+  generateLicenseFile(licenseKey: string, machineCode: string): ApiResponse<string> {
+    const license = this.getLicenseByKey(licenseKey);
+    if (!license) {
+      return { success: false, message: '授权码不存在' };
+    }
+
+    if (license.status === LicenseStatus.REVOKED) {
+      return { success: false, message: '授权已被撤销' };
+    }
+
+    const expireDate = new Date(license.expireAt);
+    if (expireDate < new Date()) {
+      return { success: false, message: '授权已过期' };
+    }
+
+    // 构建授权文件内容
+    const licenseFile: LicenseFile = {
+      version: '1.0',
+      licenseKey: license.licenseKey,
+      machineCode: machineCode,
+      product: license.productName,
+      type: license.licenseType,
+      features: license.features,
+      expireAt: license.expireAt as string,
+      issuedAt: new Date().toISOString(),
+      issuer: 'YHSK License System',
+      signature: ''
+    };
+
+    // 生成签名
+    const contentToSign = JSON.stringify({
+      version: licenseFile.version,
+      licenseKey: licenseFile.licenseKey,
+      machineCode: licenseFile.machineCode,
+      product: licenseFile.product,
+      type: licenseFile.type,
+      expireAt: licenseFile.expireAt
+    });
+    licenseFile.signature = sign(contentToSign);
+
+    // 编码为 Base64
+    const encoded = base64Encode(JSON.stringify(licenseFile));
+
     return { success: true, data: encoded };
   }
 

@@ -10,14 +10,30 @@ const router = Router();
  */
 router.post('/verify', (req: Request, res: Response) => {
   const { licenseKey, machineCode, deviceName } = req.body;
-  
+
   if (!licenseKey || !machineCode) {
     res.json({ success: false, message: '缺少必要参数' });
     return;
   }
-  
+
   const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
   const result = licenseService.verifyLicense({ licenseKey, machineCode, deviceName }, ipAddress);
+  res.json(result);
+});
+
+/**
+ * POST /api/auth/generate-license-file
+ * 在线授权验证成功后生成授权文件
+ */
+router.post('/generate-license-file', (req: Request, res: Response) => {
+  const { licenseKey, machineCode } = req.body;
+
+  if (!licenseKey || !machineCode) {
+    res.json({ success: false, message: '缺少必要参数' });
+    return;
+  }
+
+  const result = licenseService.generateLicenseFile(licenseKey, machineCode);
   res.json(result);
 });
 
@@ -70,22 +86,6 @@ router.post('/generate', (req: Request, res: Response) => {
   };
 
   const result = licenseService.generateLicense(data);
-  res.json(result);
-});
-
-/**
- * POST /api/license/offline
- * 生成离线授权文件
- */
-router.post('/offline', (req: Request, res: Response) => {
-  const { licenseKey, machineCode, deviceName } = req.body;
-  
-  if (!licenseKey || !machineCode) {
-    res.json({ success: false, message: '缺少必要参数' });
-    return;
-  }
-  
-  const result = licenseService.generateOfflineLicense(licenseKey, machineCode, deviceName || 'Unknown');
   res.json(result);
 });
 

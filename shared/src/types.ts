@@ -102,6 +102,9 @@ export interface VerifyResponse {
   license?: License;
   message: string;
   remainingDays?: number;
+  activeDeviceCount?: number;
+  maxDevices?: number;
+  remainingDevices?: number;
 }
 
 // 授权码生成请求

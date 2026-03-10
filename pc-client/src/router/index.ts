@@ -12,13 +12,7 @@ const routes: RouteRecordRaw[] = [
     path: '/online',
     name: 'OnlineAuth',
     component: () => import('@/views/OnlineAuth.vue'),
-    meta: { title: '在线授权' }
-  },
-  {
-    path: '/offline',
-    name: 'OfflineAuth',
-    component: () => import('@/views/OfflineAuth.vue'),
-    meta: { title: '离线授权' }
+    meta: { title: '授权验证' }
   }
 ]
 

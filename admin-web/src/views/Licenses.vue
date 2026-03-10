@@ -84,10 +84,9 @@
             {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" width="240">
+        <el-table-column label="操作" fixed="right" width="180">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewDetail(row)">详情</el-button>
-            <el-button link type="success" @click="openOfflineDialog(row)">离线授权</el-button>
             <el-button link type="warning" @click="handleRevoke(row)" v-if="row.status !== 'revoked'">撤销</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -125,25 +124,6 @@
       <template #footer>
         <el-button @click="showGenerateDialog = false">取消</el-button>
         <el-button type="primary" @click="handleGenerate" :loading="generating">生成</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 离线授权对话框 -->
-    <el-dialog v-model="showOfflineDialog" title="生成离线授权文件" width="500px">
-      <el-form :model="offlineForm" label-width="100px">
-        <el-form-item label="授权码">
-          <el-input v-model="offlineForm.licenseKey" disabled />
-        </el-form-item>
-        <el-form-item label="机器码" required>
-          <el-input v-model="offlineForm.machineCode" placeholder="请输入客户端机器码" />
-        </el-form-item>
-        <el-form-item label="设备名称">
-          <el-input v-model="offlineForm.deviceName" placeholder="请输入设备名称" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showOfflineDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleGenerateOffline" :loading="generatingOffline">生成</el-button>
       </template>
     </el-dialog>
 
@@ -198,17 +178,6 @@
         </el-input>
       </div>
     </el-dialog>
-
-    <!-- 显示离线授权文件 -->
-    <el-dialog v-model="showOfflineResultDialog" title="离线授权文件" width="600px">
-      <div class="result-content">
-        <p>授权文件内容（请保存为 .lic 文件）：</p>
-        <el-input v-model="offlineContent" type="textarea" :rows="6" readonly />
-        <div class="download-btn">
-          <el-button type="primary" @click="downloadLicense">下载授权文件</el-button>
-        </div>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -255,14 +224,10 @@ const statusFilter = ref('')
 const dateRange = ref<string[]>([])
 
 const showGenerateDialog = ref(false)
-const showOfflineDialog = ref(false)
 const showDetailDialog = ref(false)
 const showResultDialog = ref(false)
-const showOfflineResultDialog = ref(false)
 const generating = ref(false)
-const generatingOffline = ref(false)
 const generatedKey = ref('')
-const offlineContent = ref('')
 const currentLicense = ref<License | null>(null)
 const currentBindings = ref<any[]>([])
 const generateFormRef = ref<FormInstance>()
@@ -283,12 +248,6 @@ const generateRules: FormRules = {
     { required: true, message: '请选择授权类型', trigger: 'change' }
   ]
 }
-
-const offlineForm = reactive({
-  licenseKey: '',
-  machineCode: '',
-  deviceName: ''
-})
 
 const filteredLicenses = computed(() => {
   let result = licenses.value
@@ -434,34 +393,6 @@ const handleGenerate = async () => {
   })
 }
 
-const openOfflineDialog = (row: License) => {
-  offlineForm.licenseKey = row.licenseKey
-  offlineForm.machineCode = ''
-  offlineForm.deviceName = ''
-  showOfflineDialog.value = true
-}
-
-const handleGenerateOffline = async () => {
-  if (!offlineForm.machineCode) {
-    ElMessage.warning('请输入机器码')
-    return
-  }
-
-  generatingOffline.value = true
-  try {
-    const res = await api.licenses.offline(offlineForm)
-    if (res.success) {
-      offlineContent.value = res.data
-      showOfflineDialog.value = false
-      showOfflineResultDialog.value = true
-    } else {
-      ElMessage.error(res.message || '生成失败')
-    }
-  } finally {
-    generatingOffline.value = false
-  }
-}
-
 const viewDetail = async (row: License) => {
   try {
     const res = await api.licenses.get(row.id)
@@ -535,16 +466,6 @@ const handleUnbind = async (binding: any) => {
 const copyKey = () => {
   navigator.clipboard.writeText(generatedKey.value)
   ElMessage.success('已复制到剪贴板')
-}
-
-const downloadLicense = () => {
-  const blob = new Blob([offlineContent.value], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `license_${Date.now()}.lic`
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 onMounted(() => {

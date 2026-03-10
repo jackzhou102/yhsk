@@ -13,7 +13,7 @@
           <div class="status-info">
             <h2>{{ licenseStore.statusText }}</h2>
             <p v-if="licenseStore.licenseInfo">
-              {{ licenseStore.licenseInfo.productName }} - 
+              {{ licenseStore.licenseInfo.productName }} -
               {{ getTypeName(licenseStore.licenseInfo.licenseType) }}
             </p>
             <p v-else>请进行授权验证</p>
@@ -70,11 +70,7 @@
       <div class="action-buttons">
         <el-button type="primary" size="large" @click="$router.push('/online')">
           <el-icon><Connection /></el-icon>
-          在线授权
-        </el-button>
-        <el-button type="success" size="large" @click="$router.push('/offline')">
-          <el-icon><Document /></el-icon>
-          离线授权
+          授权验证
         </el-button>
         <el-button size="large" @click="refreshStatus">
           <el-icon><Refresh /></el-icon>

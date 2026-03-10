@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YHSK Demo App - 授权验证演示</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: #fff;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    .status-card {
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .status-card.unlicensed {
+      background: #fef2f2;
+      border: 2px solid #fecaca;
+    }
+
+    .status-card.licensed {
+      background: #f0fdf4;
+      border: 2px solid #bbf7d0;
+    }
+
+    .status-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .status-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .status-card.unlicensed .status-title {
+      color: #dc2626;
+    }
+
+    .status-card.licensed .status-title {
+      color: #16a34a;
+    }
+
+    .status-message {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .license-info {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    .license-info h4 {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .info-value {
+      color: #1e293b;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .info-value.trial {
+      color: #6366f1;
+    }
+
+    .info-value.professional {
+      color: #10b981;
+    }
+
+    .info-value.enterprise {
+      color: #f59e0b;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .features {
+      margin-top: 20px;
+    }
+
+    .features h4 {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .feature-item.enabled {
+      color: #16a34a;
+    }
+
+    .feature-item.disabled {
+      color: #94a3b8;
+      text-decoration: line-through;
+    }
+
+    .feature-item .icon {
+      font-size: 16px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 16px;
+      background: #f8fafc;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1px solid #bbf7d0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎮 YHSK Demo App</h1>
+      <p>演示如何在您的软件中集成授权验证</p>
+    </div>
+
+    <div class="content">
+      <!-- 未授权状态 -->
+      <div id="unlicensedView">
+        <div class="status-card unlicensed">
+          <div class="status-icon">⚠️</div>
+          <div class="status-title">未授权</div>
+          <div class="status-message">请导入授权文件以使用完整功能</div>
+        </div>
+
+        <div id="alertBox"></div>
+
+        <div class="actions">
+          <input type="file" id="fileInput" class="file-input" accept=".lic">
+          <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+            📁 导入授权文件
+          </button>
+          <button class="btn btn-secondary" onclick="showDemoLicense()">
+            🔑 使用演示授权
+          </button>
+        </div>
+
+        <div class="features">
+          <h4>功能预览（未授权）</h4>
+          <div class="feature-list">
+            <div class="feature-item disabled">
+              <span class="icon">🔒</span> 基础功能
+            </div>
+            <div class="feature-item disabled">
+              <span class="icon">🔒</span> 高级功能
+            </div>
+            <div class="feature-item disabled">
+              <span class="icon">🔒</span> 数据导出
+            </div>
+            <div class="feature-item disabled">
+              <span class="icon">🔒</span> API 接口
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已授权状态 -->
+      <div id="licensedView" class="hidden">
+        <div class="status-card licensed">
+          <div class="status-icon">✅</div>
+          <div class="status-title">已授权</div>
+          <div class="status-message">感谢您使用正版软件</div>
+
+          <div class="license-info">
+            <h4>授权信息</h4>
+            <div class="info-row">
+              <span class="info-label">产品</span>
+              <span class="info-value" id="infoProduct">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">授权类型</span>
+              <span class="info-value" id="infoType">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">授权码</span>
+              <span class="info-value" id="infoKey" style="font-family: monospace; font-size: 12px;">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">过期时间</span>
+              <span class="info-value" id="infoExpire">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">剩余天数</span>
+              <span class="info-value" id="infoDays">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-secondary" onclick="clearLicense()">
+            🗑️ 清除授权
+          </button>
+        </div>
+
+        <div class="features">
+          <h4>已解锁功能</h4>
+          <div class="feature-list" id="featureList">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      YHSK License System Demo • 授权文件格式: .lic
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
