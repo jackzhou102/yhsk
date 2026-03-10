@@ -6,6 +6,16 @@ const db = new Database(dbPath);
 
 // 创建表
 db.exec(`
+  -- 产品表
+  CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    code TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- 客户表
   CREATE TABLE IF NOT EXISTS customers (
     id TEXT PRIMARY KEY,
@@ -22,6 +32,7 @@ db.exec(`
     license_key TEXT UNIQUE NOT NULL,
     customer_id TEXT,
     customer_name TEXT,
+    product_id TEXT,
     product_name TEXT NOT NULL,
     license_type TEXT NOT NULL DEFAULT 'trial',
     max_devices INTEGER DEFAULT 1,
@@ -30,7 +41,8 @@ db.exec(`
     status TEXT DEFAULT 'unused',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
   );
 
   -- 设备绑定表
@@ -57,10 +69,30 @@ db.exec(`
     message TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+`);
 
-  -- 创建索引
+// 数据库迁移：为现有表添加新列
+try {
+  // 检查 licenses 表是否有 product_id 列
+  const licensesColumns = db.prepare("PRAGMA table_info(licenses)").all() as any[];
+  const hasProductId = licensesColumns.some(col => col.name === 'product_id');
+  
+  if (!hasProductId) {
+    console.log('正在迁移数据库：添加 product_id 列...');
+    db.exec('ALTER TABLE licenses ADD COLUMN product_id TEXT REFERENCES products(id)');
+    console.log('数据库迁移完成');
+  }
+} catch (error) {
+  console.log('数据库迁移检查:', error);
+}
+
+// 创建索引
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_products_code ON products(code);
   CREATE INDEX IF NOT EXISTS idx_licenses_key ON licenses(license_key);
   CREATE INDEX IF NOT EXISTS idx_licenses_status ON licenses(status);
+  CREATE INDEX IF NOT EXISTS idx_licenses_customer ON licenses(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_licenses_product ON licenses(product_id);
   CREATE INDEX IF NOT EXISTS idx_bindings_license ON device_bindings(license_id);
   CREATE INDEX IF NOT EXISTS idx_bindings_machine ON device_bindings(machine_code);
   CREATE INDEX IF NOT EXISTS idx_logs_license ON auth_logs(license_id);

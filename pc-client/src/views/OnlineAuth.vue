@@ -136,10 +136,10 @@ const copyMachineCode = () => {
 
 const handleVerify = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     if (!licenseStore.machineCode) {
       ElMessage.error('无法获取机器码')
       return
@@ -153,24 +153,25 @@ const handleVerify = async () => {
         deviceName: form.deviceName || 'Unknown'
       })
 
-      const data = res.data
-      verifyResult.value = data
+      // 后端返回格式: { success: true, data: { valid, license, message, remainingDays } }
+      const result = res.data
+      verifyResult.value = result.data || { valid: false, message: result.message || '验证失败' }
 
-      if (data.valid && data.license) {
+      if (result.success && result.data?.valid && result.data.license) {
         // 保存授权信息
         licenseStore.setLicenseInfo({
-          licenseKey: data.license.licenseKey,
-          productName: data.license.productName,
-          licenseType: data.license.licenseType,
-          features: data.license.features,
-          expireAt: data.license.expireAt,
+          licenseKey: result.data.license.licenseKey,
+          productName: result.data.license.productName,
+          licenseType: result.data.license.licenseType,
+          features: result.data.license.features,
+          expireAt: result.data.license.expireAt,
           status: 'valid',
-          remainingDays: data.remainingDays || 0
+          remainingDays: result.data.remainingDays || 0
         })
 
         ElMessage.success('授权验证成功！')
-        
-        // 3秒后返回首页
+
+        // 2秒后返回首页
         setTimeout(() => {
           router.push('/')
         }, 2000)

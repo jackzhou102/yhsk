@@ -19,12 +19,23 @@ export enum DeviceStatus {
   INACTIVE = 'inactive'
 }
 
+// 产品信息接口
+export interface Product {
+  id: string;
+  code: string;              // 产品代码
+  name: string;              // 产品名称
+  description?: string;      // 产品描述
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 // 授权信息接口
 export interface License {
   id: string;
   licenseKey: string;        // 授权码
   customerId?: string;       // 客户ID
   customerName?: string;     // 客户名称
+  productId?: string;        // 产品ID
   productName: string;       // 产品名称
   licenseType: LicenseType;  // 授权类型
   maxDevices: number;        // 最大设备数
@@ -101,6 +112,7 @@ export interface GenerateLicenseRequest {
   expireDays: number;
   features: string[];
   customerId?: string;
+  productId?: string;
 }
 
 // 离线授权文件生成请求

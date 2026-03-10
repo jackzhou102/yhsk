@@ -18,6 +18,10 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>仪表盘</span>
         </el-menu-item>
+        <el-menu-item index="/products">
+          <el-icon><Box /></el-icon>
+          <span>产品管理</span>
+        </el-menu-item>
         <el-menu-item index="/licenses">
           <el-icon><Ticket /></el-icon>
           <span>授权管理</span>

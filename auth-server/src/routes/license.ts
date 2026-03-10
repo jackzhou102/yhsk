@@ -42,27 +42,33 @@ router.post('/unbind', (req: Request, res: Response) => {
  * 生成授权码
  */
 router.post('/generate', (req: Request, res: Response) => {
-  const { productName, licenseType, maxDevices, expireDays, features, customerId } = req.body;
-  
-  if (!productName || !licenseType || !expireDays) {
+  const { productName, licenseType, maxDevices, expireDays, features, customerId, productId } = req.body;
+
+  if (!licenseType || !expireDays) {
     res.json({ success: false, message: '缺少必要参数' });
     return;
   }
-  
+
+  if (!productName && !productId) {
+    res.json({ success: false, message: '产品名称或产品ID必须提供一项' });
+    return;
+  }
+
   if (!Object.values(LicenseType).includes(licenseType)) {
     res.json({ success: false, message: '无效的授权类型' });
     return;
   }
-  
+
   const data: GenerateLicenseRequest = {
-    productName,
+    productName: productName || '',
     licenseType,
     maxDevices: maxDevices || 1,
     expireDays,
     features: features || [],
-    customerId
+    customerId,
+    productId
   };
-  
+
   const result = licenseService.generateLicense(data);
   res.json(result);
 });

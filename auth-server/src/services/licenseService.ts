@@ -20,6 +20,8 @@ import {
   sign,
   base64Encode
 } from '../../../shared/dist/crypto';
+import { customerService } from './customerService';
+import { productService } from './productService';
 
 export class LicenseService {
   /**
@@ -28,21 +30,42 @@ export class LicenseService {
   generateLicense(data: GenerateLicenseRequest): ApiResponse<License> {
     try {
       const db = getDatabase();
+
+      // 获取客户信息
+      let customerName = '';
+      if (data.customerId) {
+        const customer = customerService.getCustomerById(data.customerId);
+        if (customer) {
+          customerName = customer.name;
+        }
+      }
+
+      // 获取产品信息
+      let productName = data.productName;
+      if (data.productId) {
+        const product = productService.getProductById(data.productId);
+        if (product) {
+          productName = product.name;
+        }
+      }
+
       const id = generateId();
       const licenseKey = generateLicenseKey();
       const now = new Date().toISOString();
       const expireAt = new Date(Date.now() + data.expireDays * 24 * 60 * 60 * 1000).toISOString();
 
       const stmt = db.prepare(`
-        INSERT INTO licenses (id, license_key, customer_id, product_name, license_type, max_devices, expire_at, features, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO licenses (id, license_key, customer_id, customer_name, product_id, product_name, license_type, max_devices, expire_at, features, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       stmt.run(
         id,
         licenseKey,
         data.customerId || null,
-        data.productName,
+        customerName || null,
+        data.productId || null,
+        productName,
         data.licenseType,
         data.maxDevices || DEFAULT_MAX_DEVICES[data.licenseType],
         expireAt,
@@ -355,6 +378,7 @@ export class LicenseService {
       licenseKey: row.license_key,
       customerId: row.customer_id,
       customerName: row.customer_name,
+      productId: row.product_id,
       productName: row.product_name,
       licenseType: row.license_type as LicenseType,
       maxDevices: row.max_devices,

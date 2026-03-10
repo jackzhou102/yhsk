@@ -37,9 +37,10 @@ export const api = {
     generate: (data: any) => request<any>({ url: '/license/generate', method: 'POST', data }),
     revoke: (id: string) => request<any>({ url: `/license/revoke/${id}`, method: 'POST' }),
     delete: (id: string) => request<any>({ url: `/license/${id}`, method: 'DELETE' }),
-    offline: (data: any) => request<any>({ url: '/license/offline', method: 'POST', data })
+    offline: (data: any) => request<any>({ url: '/license/offline', method: 'POST', data }),
+    unbind: (licenseId: string, machineCode: string) => request<any>({ url: '/auth/unbind', method: 'POST', data: { licenseId, machineCode } })
   },
-  
+
   // 客户相关
   customers: {
     list: () => request<any>({ url: '/customer/list', method: 'GET' }),
@@ -48,10 +49,19 @@ export const api = {
     update: (id: string, data: any) => request<any>({ url: `/customer/${id}`, method: 'PUT', data }),
     delete: (id: string) => request<any>({ url: `/customer/${id}`, method: 'DELETE' })
   },
-  
+
+  // 产品相关
+  products: {
+    list: () => request<any>({ url: '/product/list', method: 'GET' }),
+    get: (id: string) => request<any>({ url: `/product/${id}`, method: 'GET' }),
+    create: (data: any) => request<any>({ url: '/product/create', method: 'POST', data }),
+    update: (id: string, data: any) => request<any>({ url: `/product/${id}`, method: 'PUT', data }),
+    delete: (id: string) => request<any>({ url: `/product/${id}`, method: 'DELETE' })
+  },
+
   // 日志相关
   logs: {
-    list: (limit: number = 100) => request<any>({ url: `/logs/list?limit=${limit}`, method: 'GET' })
+    list: (limit: number = 100) => request<any>({ url: `/logs/list`, method: 'GET', params: { limit } })
   }
 }
 

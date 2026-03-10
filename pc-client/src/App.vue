@@ -81,6 +81,8 @@ html, body, #app {
   color: #fff;
   font-size: 13px;
   font-weight: 500;
+  /* macOS traffic lights 预留空间 */
+  padding-left: 72px;
 }
 
 .title-bar-controls {

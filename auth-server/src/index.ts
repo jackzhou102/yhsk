@@ -6,6 +6,7 @@ import fs from 'fs';
 // 导入路由
 import licenseRouter from './routes/license';
 import customerRouter from './routes/customer';
+import productRouter from './routes/product';
 import logsRouter from './routes/logs';
 
 // 确保数据目录存在
@@ -41,6 +42,7 @@ if (fs.existsSync(adminDistPath)) {
 app.use('/api/auth', licenseRouter);
 app.use('/api/license', licenseRouter);
 app.use('/api/customer', customerRouter);
+app.use('/api/product', productRouter);
 app.use('/api/logs', logsRouter);
 
 // 健康检查

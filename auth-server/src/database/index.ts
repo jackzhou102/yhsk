@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import { app } from 'express';
 
 let db: Database.Database | null = null;
 

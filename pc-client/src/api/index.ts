@@ -37,28 +37,34 @@ export const offlineAuth = {
   // 解析授权文件
   parseLicenseFile: async (content: string) => {
     try {
-      // Base64 解码
-      const decoded = atob(content)
+      // Base64 解码 - 使用 TextDecoder 正确处理 UTF-8 中文字符
+      const binaryString = atob(content.trim())
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      const decoder = new TextDecoder('utf-8')
+      const decoded = decoder.decode(bytes)
       const licenseData = JSON.parse(decoded)
       return { success: true, data: licenseData }
     } catch (error: any) {
       return { success: false, message: '授权文件格式错误' }
     }
   },
-  
+
   // 验证签名
   verifySignature: (licenseData: any, machineCode: string) => {
     // 检查机器码
     if (licenseData.machineCode !== machineCode) {
       return { valid: false, message: '机器码不匹配' }
     }
-    
+
     // 检查过期时间
     const expireAt = new Date(licenseData.expireAt)
     if (expireAt < new Date()) {
       return { valid: false, message: '授权已过期' }
     }
-    
+
     return { valid: true, data: licenseData }
   }
 }
