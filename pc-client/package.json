@@ -1,0 +1,51 @@
+{
+  "name": "pc-client",
+  "version": "1.0.0",
+  "description": "PC端授权工具 - 在线/离线授权验证",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5175 && electron .\"",
+    "electron:build": "npm run build:electron && vite build && electron-builder",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "axios": "^1.6.5",
+    "dayjs": "^1.11.10",
+    "electron-store": "^8.1.0",
+    "element-plus": "^2.5.3",
+    "pinia": "^2.1.7",
+    "systeminformation": "^5.22.0",
+    "vue": "^3.4.15",
+    "vue-router": "^4.2.5",
+    "@element-plus/icons-vue": "^2.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.3",
+    "concurrently": "^8.2.2",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12",
+    "vue-tsc": "^1.8.27",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.yhsk.license-client",
+    "productName": "YHSK授权工具",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

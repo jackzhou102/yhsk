@@ -1,0 +1,23 @@
+{
+  "name": "yhsk-license-system",
+  "version": "1.0.0",
+  "description": "授权工具系统 - 包含PC端授权工具、后台服务和管理后台",
+  "private": true,
+  "workspaces": [
+    "auth-server",
+    "admin-web",
+    "pc-client",
+    "shared"
+  ],
+  "scripts": {
+    "server": "npm run dev --workspace=auth-server",
+    "admin": "npm run dev --workspace=admin-web",
+    "client": "npm run dev --workspace=pc-client",
+    "build:server": "npm run build --workspace=auth-server",
+    "build:admin": "npm run build --workspace=admin-web",
+    "build:client": "npm run build --workspace=pc-client"
+  },
+  "keywords": ["license", "authorization", "electron", "vue3"],
+  "author": "",
+  "license": "MIT"
+}
